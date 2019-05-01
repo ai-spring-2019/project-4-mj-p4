@@ -81,24 +81,50 @@ def accuracy(nn, pairs):
 ### Neural Network code goes here
 
 
+class NeuralNetwork():
+    def __init__(self, structure):
+        self._path_weights = {}
+        self._node_weights = {}
+
+        node_number = 0
+        for line in structure:
+            for node in range(line):
+                self._node_weights[node_number] = None
+                node_number += 1
+
+
+        past_total = 0
+        total = structure[0]
+        for line in range(len(structure) - 1):
+            for node in range(structure[line]):
+                for next in range(structure[line + 1]):
+                    print("hello")
+                    self._path_weights[(node + past_total, next + total)] = None
+
+            total += structure[line + 1]
+            past_total = structure[line]
+
+        print(self._path_weights)
+
+
 
 
 
 def main():
-    header, data = read_data(sys.argv[1], ",")
+    #header, data = read_data(sys.argv[1], ",")
 
-    pairs = convert_data_to_pairs(data, header)
+    #pairs = convert_data_to_pairs(data, header)
 
     # Note: add 1.0 to the front of each x vector to account for the dummy input
-    training = [([1.0] + x, y) for (x, y) in pairs]
+    #training = [([1.0] + x, y) for (x, y) in pairs]
 
     # Check out the data:
-    for example in training:
-        print(example)
+    #for example in training:
+    #    print(example)
 
     ### I expect the running of your program will work something like this;
     ### this is not mandatory and you could have something else below entirely.
-    # nn = NeuralNetwork([3, 6, 3])
+    nn = NeuralNetwork([1, 2, 1])
     # nn.back_propagation_learning(training)
 
 if __name__ == "__main__":
