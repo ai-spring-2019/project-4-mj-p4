@@ -88,7 +88,7 @@ class NeuralNetwork():
         self._path_weights = {}
         self._node_weights = {}
         self._structure = structure
-        self.max_layer = len(structure) - 1
+        self._max_layer = len(structure) - 1
 
         #initialize node_weights dictionary used for propogation all set to None
         node_number = 0
@@ -138,12 +138,25 @@ class NeuralNetwork():
 
         return layer
 
+    def back_propagation_learning(self, tests):
+        self.initialize_random_weights()
+        for pair in tests:
+            self.forward_propagate(pair)
+            self.back_propagate(pair)
+
+
     def inj(self, node):
-        prev_layer = layer_of(node) - 1
-        prev_nodes = get_layer_range(prev_layer)
+        prev_layer = self.layer_of(node) - 1
+        prev_nodes = self.get_layer_range(prev_layer)
 
         sum = 0
+        print()
+        print("NODE WEIGHTS")
+        print(self._node_weights)
+        print()
         for prev in range(prev_nodes[0], prev_nodes[1]):
+            print(self._path_weights[(prev, node)])
+            print(self._node_weights[prev])
             sum += self._path_weights[(prev, node)] * self._node_weights[prev]
 
         return sum
@@ -155,30 +168,53 @@ class NeuralNetwork():
         for node in range(first_layer):
             self._node_weights[node] = pair[0]
         for layer in range(1, self._max_layer):
-            nodes = get_layer_range(layer)
+            nodes = self.get_layer_range(layer)
             for j in range(nodes[0], nodes[1]):
-                inj = inj(j)
+                inj = self.inj(j)
                 self._node_weights[j] = logistic(inj)
 
+    def back_propagate(self, pair):
+        delta = {}
+        output_layer = self.get_layer_range(self._max_layer)
+        for node in range(output_layer[0], output_layer[1]):
+            delta[j] = self.calculate_delta(node, delta, y, True)
+        for layer in range(self._max_layer - 1, 0):
+            nodes = self.get_layer_range(layer)
+            for node in nodes:
+                delta[node] = self.calculate_delta(node, delta)
+
+        for x,y in self._path_weights:
+            self._path_weights[(x,y)] = self._path_weights[(x,y)] + .01 + self._node_weights[x] * delta[y]
+
+    def calculate_delta(self, node, delta, y = None, output = False):
+        aj = self._node_weights[node]
+        if output:
+            return (aj) * (1 - aj) * (y - aj)
+        else:
+            sum = 0
+            j_layer = self.layer_of(node) + 1
+            j_nodes = self.get_layer_range(j_layer)
+            for j in range(j_nodes[0], j_nodes[1]):
+                sum += self._path_weights[(node, j)] * delta[j]
+
+            return logistic(aj) * (1 - logistic(aj)) * sum
 
 def main():
-    #header, data = read_data(sys.argv[1], ",")
+    header, data = read_data(sys.argv[1], ",")
 
-    #pairs = convert_data_to_pairs(data, header)
+    pairs = convert_data_to_pairs(data, header)
 
     # Note: add 1.0 to the front of each x vector to account for the dummy input
-    #training = [([1.0] + x, y) for (x, y) in pairs]
+    training = [([1.0] + x, y) for (x, y) in pairs]
 
     # Check out the data:
-    #for example in training:
-    #    print(example)
+    for example in training:
+        print(example)
 
     ### I expect the running of your program will work something like this;
     ### this is not mandatory and you could have something else below entirely.
     nn = NeuralNetwork([1, 2, 1])
-    nn.initialize_random_weights()
-    nn.forward_propagate((1,2))
-    # nn.back_propagation_learning(training)
+    nn.back_propagation_learning(training)
 
 if __name__ == "__main__":
     main()
