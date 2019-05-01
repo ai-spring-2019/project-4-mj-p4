@@ -83,31 +83,82 @@ def accuracy(nn, pairs):
 
 class NeuralNetwork():
     def __init__(self, structure):
+        """Constructor - initializes dictionaries used to represent nn"""
+
         self._path_weights = {}
         self._node_weights = {}
+        self._structure = structure
+        self.max_layer = len(structure) - 1
 
+        #initialize node_weights dictionary used for propogation all set to None
         node_number = 0
         for line in structure:
             for node in range(line):
                 self._node_weights[node_number] = None
                 node_number += 1
 
-
+        #initialize _path_weights dictionary - main implementation of NN
         past_total = 0
         total = structure[0]
         for line in range(len(structure) - 1):
             for node in range(structure[line]):
                 for next in range(structure[line + 1]):
-                    print("hello")
                     self._path_weights[(node + past_total, next + total)] = None
 
             total += structure[line + 1]
             past_total = structure[line]
 
-        print(self._path_weights)
+    def initialize_random_weights(self):
+        """Sets random starting weights"""
 
+        for path in self._path_weights:
+            self._path_weights[path] = random.random()
 
+    def get_layer_range(self, i):
+        """returns a range of node numbers for a given layer"""
 
+        start = 0
+        end = self._structure[0]
+        layer = 0
+        while layer < i:
+            layer += 1
+            start = end
+            end += self._structure[layer]
+
+        return (start, end)
+
+    def layer_of(self, node):
+        start = 0
+        end = self._structure[0]
+        layer = 0
+        while end < node:
+            layer += 1
+            start = end
+            end += self._structure[layer]
+
+        return layer
+
+    def inj(self, node):
+        prev_layer = layer_of(node) - 1
+        prev_nodes = get_layer_range(prev_layer)
+
+        sum = 0
+        for prev in range(prev_nodes[0], prev_nodes[1]):
+            sum += self._path_weights[(prev, node)] * self._node_weights[prev]
+
+        return sum
+
+    def forward_propagate(self, pair):
+        """helper function - Forward propogates a single pair"""
+
+        first_layer = self.get_layer_range(0)[1]
+        for node in range(first_layer):
+            self._node_weights[node] = pair[0]
+        for layer in range(1, self._max_layer):
+            nodes = get_layer_range(layer)
+            for j in range(nodes[0], nodes[1]):
+                inj = inj(j)
+                self._node_weights[j] = logistic(inj)
 
 
 def main():
@@ -125,6 +176,8 @@ def main():
     ### I expect the running of your program will work something like this;
     ### this is not mandatory and you could have something else below entirely.
     nn = NeuralNetwork([1, 2, 1])
+    nn.initialize_random_weights()
+    nn.forward_propagate((1,2))
     # nn.back_propagation_learning(training)
 
 if __name__ == "__main__":
