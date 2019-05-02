@@ -209,7 +209,7 @@ class NeuralNetwork():
             for j in range(j_nodes[0], j_nodes[1]):
                 sum += self._path_weights[(node, j)] * delta[j]
 
-            return logistic(aj) * (1 - logistic(aj)) * sum
+            return aj * (1 - aj) * sum
 
 def main():
     header, data = read_data(sys.argv[1], ",")
@@ -225,9 +225,9 @@ def main():
 
     ### I expect the running of your program will work something like this;
     ### this is not mandatory and you could have something else below entirely.
-    nn = NeuralNetwork([3, 6, 3], 50000)
+    nn = NeuralNetwork([3, 6, 3], 100000)
     nn.back_propagation_learning(training)
-    print(nn.guess([0,1,0]))
+    print(nn.guess([0,0,1]))
 
 if __name__ == "__main__":
     main()
