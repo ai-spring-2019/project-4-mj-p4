@@ -88,7 +88,7 @@ class NeuralNetwork():
         self._path_weights = {}
         self._node_weights = {}
         self._structure = structure
-        self._max_layer = len(structure) - 1
+        self._max_layer = len(structure)
 
         #initialize node_weights dictionary used for propogation all set to None
         node_number = 0
@@ -131,11 +131,10 @@ class NeuralNetwork():
         start = 0
         end = self._structure[0]
         layer = 0
-        while end < node:
+        while end <= node:
             layer += 1
             start = end
             end += self._structure[layer]
-
         return layer
 
     def back_propagation_learning(self, tests):
@@ -150,23 +149,17 @@ class NeuralNetwork():
         prev_nodes = self.get_layer_range(prev_layer)
 
         sum = 0
-        print()
-        print("NODE WEIGHTS")
-        print(self._node_weights)
-        print()
         for prev in range(prev_nodes[0], prev_nodes[1]):
-            print(self._path_weights[(prev, node)])
-            print(self._node_weights[prev])
             sum += self._path_weights[(prev, node)] * self._node_weights[prev]
 
         return sum
 
     def forward_propagate(self, pair):
         """helper function - Forward propogates a single pair"""
-
         first_layer = self.get_layer_range(0)[1]
         for node in range(first_layer):
-            self._node_weights[node] = pair[0]
+            self._node_weights[node] = pair[0][node]
+
         for layer in range(1, self._max_layer):
             nodes = self.get_layer_range(layer)
             for j in range(nodes[0], nodes[1]):
@@ -175,18 +168,21 @@ class NeuralNetwork():
 
     def back_propagate(self, pair):
         delta = {}
-        output_layer = self.get_layer_range(self._max_layer)
+        output_layer = self.get_layer_range(self._max_layer - 1)
+        index = 0
         for node in range(output_layer[0], output_layer[1]):
-            delta[j] = self.calculate_delta(node, delta, y, True)
-        for layer in range(self._max_layer - 1, 0):
+            delta[node] = self.calculate_delta(node, delta, pair[1][0], True)
+            index += 1
+        for layer in range(self._max_layer - 2, 0, -1):
             nodes = self.get_layer_range(layer)
-            for node in nodes:
+            for node in range(nodes[0], nodes[1]):
                 delta[node] = self.calculate_delta(node, delta)
 
         for x,y in self._path_weights:
             self._path_weights[(x,y)] = self._path_weights[(x,y)] + .01 + self._node_weights[x] * delta[y]
 
     def calculate_delta(self, node, delta, y = None, output = False):
+        print("Calculating delta of", node )
         aj = self._node_weights[node]
         if output:
             return (aj) * (1 - aj) * (y - aj)
@@ -213,7 +209,7 @@ def main():
 
     ### I expect the running of your program will work something like this;
     ### this is not mandatory and you could have something else below entirely.
-    nn = NeuralNetwork([1, 2, 1])
+    nn = NeuralNetwork([3, 6, 3])
     nn.back_propagation_learning(training)
 
 if __name__ == "__main__":
