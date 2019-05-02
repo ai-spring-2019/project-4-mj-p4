@@ -82,13 +82,14 @@ def accuracy(nn, pairs):
 
 
 class NeuralNetwork():
-    def __init__(self, structure):
+    def __init__(self, structure, epochs):
         """Constructor - initializes dictionaries used to represent nn"""
 
         self._path_weights = {}
         self._node_weights = {}
         self._structure = structure
         self._max_layer = len(structure)
+        self._epochs = epochs
 
         #initialize node_weights dictionary used for propogation all set to None
         node_number = 0
@@ -137,11 +138,18 @@ class NeuralNetwork():
             end += self._structure[layer]
         return layer
 
+    def clear_node_weights(self):
+        for node in self._node_weights:
+            self._node_weights[node] = None
+
     def back_propagation_learning(self, tests):
         self.initialize_random_weights()
-        for pair in tests:
-            self.forward_propagate(pair)
-            self.back_propagate(pair)
+        for epoch in range(self._epochs):
+            print("Epoch : ", epoch)
+            for pair in tests:
+                self.forward_propagate(pair[0])
+                self.back_propagate(pair)
+                self.clear_node_weights()
 
 
     def inj(self, node):
@@ -154,11 +162,20 @@ class NeuralNetwork():
 
         return sum
 
-    def forward_propagate(self, pair):
+    def guess(self, inputs):
+        self.forward_propagate(inputs)
+        output_layer = self.get_layer_range(self._max_layer - 1)
+        res = []
+        for node in range(output_layer[0], output_layer[1]):
+            res.append(self._node_weights[node])
+
+        return res
+
+    def forward_propagate(self, inputs):
         """helper function - Forward propogates a single pair"""
         first_layer = self.get_layer_range(0)[1]
         for node in range(first_layer):
-            self._node_weights[node] = pair[0][node]
+            self._node_weights[node] = inputs[node]
 
         for layer in range(1, self._max_layer):
             nodes = self.get_layer_range(layer)
@@ -173,16 +190,15 @@ class NeuralNetwork():
         for node in range(output_layer[0], output_layer[1]):
             delta[node] = self.calculate_delta(node, delta, pair[1][0], True)
             index += 1
-        for layer in range(self._max_layer - 2, 0, -1):
+        for layer in range(self._max_layer - 2, -1, -1):
             nodes = self.get_layer_range(layer)
             for node in range(nodes[0], nodes[1]):
                 delta[node] = self.calculate_delta(node, delta)
 
         for x,y in self._path_weights:
-            self._path_weights[(x,y)] = self._path_weights[(x,y)] + .01 + self._node_weights[x] * delta[y]
+            self._path_weights[(x,y)] = self._path_weights[(x,y)] + (.01 * (self._node_weights[x] * delta[y]))
 
     def calculate_delta(self, node, delta, y = None, output = False):
-        print("Calculating delta of", node )
         aj = self._node_weights[node]
         if output:
             return (aj) * (1 - aj) * (y - aj)
@@ -209,8 +225,9 @@ def main():
 
     ### I expect the running of your program will work something like this;
     ### this is not mandatory and you could have something else below entirely.
-    nn = NeuralNetwork([3, 6, 3])
+    nn = NeuralNetwork([3, 6, 3], 50000)
     nn.back_propagation_learning(training)
+    print(nn.guess([0,1,0]))
 
 if __name__ == "__main__":
     main()
