@@ -109,6 +109,11 @@ class NeuralNetwork():
             total += structure[line + 1]
             past_total = structure[line]
 
+        for node in self._node_weights:
+            self._path_weights[("d",node)] = None
+
+        self._node_weights["d"] = 1.0
+
     def initialize_random_weights(self):
         """Sets random starting weights"""
 
@@ -141,6 +146,7 @@ class NeuralNetwork():
     def clear_node_weights(self):
         for node in self._node_weights:
             self._node_weights[node] = None
+        self._node_weights["d"] = 1.0
 
     def back_propagation_learning(self, tests):
         self.initialize_random_weights()
@@ -159,6 +165,7 @@ class NeuralNetwork():
         sum = 0
         for prev in range(prev_nodes[0], prev_nodes[1]):
             sum += self._path_weights[(prev, node)] * self._node_weights[prev]
+        sum += self._path_weights[("d", node)] * self._node_weights["d"]
 
         return sum
 
@@ -176,7 +183,6 @@ class NeuralNetwork():
         first_layer = self.get_layer_range(0)[1]
         for node in range(first_layer):
             self._node_weights[node] = inputs[node]
-
         for layer in range(1, self._max_layer):
             nodes = self.get_layer_range(layer)
             for j in range(nodes[0], nodes[1]):
@@ -188,7 +194,7 @@ class NeuralNetwork():
         output_layer = self.get_layer_range(self._max_layer - 1)
         index = 0
         for node in range(output_layer[0], output_layer[1]):
-            delta[node] = self.calculate_delta(node, delta, pair[1][0], True)
+            delta[node] = self.calculate_delta(node, delta, pair[1][index], True)
             index += 1
         for layer in range(self._max_layer - 2, -1, -1):
             nodes = self.get_layer_range(layer)
@@ -227,7 +233,9 @@ def main():
     ### this is not mandatory and you could have something else below entirely.
     nn = NeuralNetwork([3, 6, 3], 100000)
     nn.back_propagation_learning(training)
-    print(nn.guess([0,0,1]))
+    print(nn.guess([1,0,0,0,0]))
+    print(nn.guess([1,1,1,0]))
+    print(nn.guess([1,1,1,1]))
 
 if __name__ == "__main__":
     main()
