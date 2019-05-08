@@ -88,7 +88,7 @@ class NeuralNetwork():
         self._path_weights = {}
         self._node_weights = {}
         self._structure = structure
-        self._max_layer = len(structure)
+        self._max_layer = len(structure) - 1
         self._epochs = epochs
 
         #initialize node_weights dictionary used for propogation all set to None
@@ -118,7 +118,7 @@ class NeuralNetwork():
         """Sets random starting weights"""
 
         for path in self._path_weights:
-            self._path_weights[path] = random.random()
+            self._path_weights[path] = random.uniform(-1,1)
 
     def get_layer_range(self, i):
         """returns a range of node numbers for a given layer"""
@@ -150,28 +150,36 @@ class NeuralNetwork():
 
     def back_propagation_learning(self, tests):
         self.initialize_random_weights()
+        #print("Initial Weights: ", self._path_weights)
         for epoch in range(self._epochs):
             print("Epoch : ", epoch)
             for pair in tests:
                 self.forward_propagate(pair[0])
                 self.back_propagate(pair)
                 self.clear_node_weights()
+        #print()
+        #print()
+        #print("End weights: ", self._path_weights)
 
 
     def inj(self, node):
+        #print("INJ of Node:", node)
         prev_layer = self.layer_of(node) - 1
         prev_nodes = self.get_layer_range(prev_layer)
+        #print("ON LAYER: ", self.layer_of(node))
+        #print("Prev_layer:", prev_layer)
 
         sum = 0
         for prev in range(prev_nodes[0], prev_nodes[1]):
+            #print("Node:", prev)
             sum += self._path_weights[(prev, node)] * self._node_weights[prev]
         sum += self._path_weights[("d", node)] * self._node_weights["d"]
 
         return sum
 
     def guess(self, inputs):
-        self.forward_propagate(inputs)
-        output_layer = self.get_layer_range(self._max_layer - 1)
+        self.forward_propagate(inputs[0])
+        output_layer = self.get_layer_range(self._max_layer)
         res = []
         for node in range(output_layer[0], output_layer[1]):
             res.append(self._node_weights[node])
@@ -181,28 +189,40 @@ class NeuralNetwork():
     def forward_propagate(self, inputs):
         """helper function - Forward propogates a single pair"""
         first_layer = self.get_layer_range(0)[1]
+        #print("First loop")
         for node in range(first_layer):
+            #print(node)
             self._node_weights[node] = inputs[node]
-        for layer in range(1, self._max_layer):
+
+        #print("Second loop")
+        for layer in range(1, self._max_layer + 1):
+            #print("Layer: ", layer)
             nodes = self.get_layer_range(layer)
             for j in range(nodes[0], nodes[1]):
+                #print("Node: ", j)
                 inj = self.inj(j)
                 self._node_weights[j] = logistic(inj)
 
     def back_propagate(self, pair):
+        print(pair)
         delta = {}
-        output_layer = self.get_layer_range(self._max_layer - 1)
+        output_layer = self.get_layer_range(self._max_layer)
         index = 0
+        #print("First Loop")
         for node in range(output_layer[0], output_layer[1]):
+            print("output_layer:", output_layer)
             delta[node] = self.calculate_delta(node, delta, pair[1][index], True)
             index += 1
-        for layer in range(self._max_layer - 2, -1, -1):
+        #print("Second Loop")
+        for layer in range(self._max_layer - 1, -1, -1):
+            print("Layer:", layer)
             nodes = self.get_layer_range(layer)
             for node in range(nodes[0], nodes[1]):
+                #print("node:", node)
                 delta[node] = self.calculate_delta(node, delta)
 
         for x,y in self._path_weights:
-            self._path_weights[(x,y)] = self._path_weights[(x,y)] + (.01 * (self._node_weights[x] * delta[y]))
+            self._path_weights[(x,y)] = self._path_weights[(x,y)] + (.1 * (self._node_weights[x] * delta[y]))
 
     def calculate_delta(self, node, delta, y = None, output = False):
         aj = self._node_weights[node]
@@ -216,6 +236,20 @@ class NeuralNetwork():
                 sum += self._path_weights[(node, j)] * delta[j]
 
             return aj * (1 - aj) * sum
+
+def simple_accuracy(nn, examples):
+    good = 0
+    bad = 0
+    for example in examples:
+        prediction = round(nn.guess(example)[0])
+        if prediction == example[1][0]:
+            good += 1
+        else:
+            bad += 1
+
+    print("Correct: ", good)
+    print("Incorrect: ", bad)
+    print("Accuracy: ", good/(good + bad))
 
 def main():
     header, data = read_data(sys.argv[1], ",")
@@ -231,11 +265,13 @@ def main():
 
     ### I expect the running of your program will work something like this;
     ### this is not mandatory and you could have something else below entirely.
-    nn = NeuralNetwork([3, 6, 3], 100000)
+    nn = NeuralNetwork([3, 6, 3], 10000)
     nn.back_propagation_learning(training)
-    print(nn.guess([1,0,0,0,0]))
-    print(nn.guess([1,1,1,0]))
-    print(nn.guess([1,1,1,1]))
+
+    for example in training:
+        print(example, ":", nn.guess(example))
+
+    simple_accuracy(nn, training)
 
 if __name__ == "__main__":
     main()
