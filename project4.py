@@ -204,18 +204,18 @@ class NeuralNetwork():
                 self._node_weights[j] = logistic(inj)
 
     def back_propagate(self, pair):
-        print(pair)
+        #print(pair)
         delta = {}
         output_layer = self.get_layer_range(self._max_layer)
         index = 0
         #print("First Loop")
         for node in range(output_layer[0], output_layer[1]):
-            print("output_layer:", output_layer)
+            #print("output_layer:", output_layer)
             delta[node] = self.calculate_delta(node, delta, pair[1][index], True)
             index += 1
         #print("Second Loop")
         for layer in range(self._max_layer - 1, -1, -1):
-            print("Layer:", layer)
+            #print("Layer:", layer)
             nodes = self.get_layer_range(layer)
             for node in range(nodes[0], nodes[1]):
                 #print("node:", node)
@@ -241,11 +241,15 @@ def simple_accuracy(nn, examples):
     good = 0
     bad = 0
     for example in examples:
-        prediction = round(nn.guess(example)[0])
-        if prediction == example[1][0]:
-            good += 1
-        else:
-            bad += 1
+        done = False
+        prediction = nn.guess(example)
+        for i in range(len(example[1])):
+            if not done:
+                if example[1][i] != round(prediction[i]):
+                    bad += 1
+                    done = True
+            if not done:
+                good += 1
 
     print("Correct: ", good)
     print("Incorrect: ", bad)
@@ -258,20 +262,25 @@ def main():
 
     # Note: add 1.0 to the front of each x vector to account for the dummy input
     training = [([1.0] + x, y) for (x, y) in pairs]
+    real_training = [training[i] for i in range(0,len(training),2)]
+    eval = [training[i+1] for i in range(0,len(training), 2)]
 
+    print(training)
     # Check out the data:
     for example in training:
         print(example)
 
     ### I expect the running of your program will work something like this;
     ### this is not mandatory and you could have something else below entirely.
-    nn = NeuralNetwork([3, 6, 3], 10000)
-    nn.back_propagation_learning(training)
+    nn = NeuralNetwork([13, 6, 3], 10000)
+    nn.back_propagation_learning(real_training)
 
-    for example in training:
-        print(example, ":", nn.guess(example))
+    for example in eval:
+        guess = nn.guess(example)
+        rounded = [round(item) for item in guess]
+        print(example[1], ":", rounded)
 
-    simple_accuracy(nn, training)
+    simple_accuracy(nn, eval)
 
 if __name__ == "__main__":
     main()
