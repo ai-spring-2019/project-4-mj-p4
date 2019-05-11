@@ -262,8 +262,9 @@ def main():
 
     # Note: add 1.0 to the front of each x vector to account for the dummy input
     training = [([1.0] + x, y) for (x, y) in pairs]
+    print(training[0])
     real_training = [training[i] for i in range(0,len(training),2)]
-    eval = [training[i+1] for i in range(0,len(training), 2)]
+    eval = [training[i+1] for i in range(0,len(training)-1, 2)]
 
     print(training)
     # Check out the data:
@@ -272,7 +273,7 @@ def main():
 
     ### I expect the running of your program will work something like this;
     ### this is not mandatory and you could have something else below entirely.
-    nn = NeuralNetwork([13, 6, 3], 10000)
+    nn = NeuralNetwork([30, 6, 1], 10000)
     nn.back_propagation_learning(real_training)
 
     for example in eval:
