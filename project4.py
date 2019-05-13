@@ -1,10 +1,13 @@
 """
-PLEASE DOCUMENT HERE
+Mitchel Herman and Judy Zhou
+
+Implementation of the Neural Network algorithm given to us in class
+as well as some code used to run tests
 
 Usage: python3 project3.py DATASET.csv
 """
 
-import csv, sys, random, math
+import csv, sys, random, math, statistics, copy
 
 def read_data(filename, delimiter=",", has_header=True):
     """Reads datafile using given delimiter. Returns a header and a list of
@@ -85,8 +88,11 @@ class NeuralNetwork():
     def __init__(self, structure, epochs):
         """Constructor - initializes dictionaries used to represent nn"""
 
+        #Dictionary takes tuple of two nodes and returns the path weight between them
         self._path_weights = {}
+        #Dictionary takes a node and returns its value
         self._node_weights = {}
+        #keep track of the strucutre
         self._structure = structure
         self._max_layer = len(structure) - 1
         self._epochs = epochs
@@ -107,12 +113,15 @@ class NeuralNetwork():
                     self._path_weights[(node + past_total, next + total)] = None
 
             total += structure[line + 1]
-            past_total = structure[line]
+            past_total += structure[line]
 
+        #Don't forget the dummy weights
         for node in self._node_weights:
             self._path_weights[("d",node)] = None
 
         self._node_weights["d"] = 1.0
+
+
 
     def initialize_random_weights(self):
         """Sets random starting weights"""
@@ -134,6 +143,7 @@ class NeuralNetwork():
         return (start, end)
 
     def layer_of(self, node):
+        """Given a node number, it returns the layer it is on"""
         start = 0
         end = self._structure[0]
         layer = 0
@@ -144,40 +154,37 @@ class NeuralNetwork():
         return layer
 
     def clear_node_weights(self):
+        """Resets all the values of the node before the next propogation"""
         for node in self._node_weights:
             self._node_weights[node] = None
         self._node_weights["d"] = 1.0
 
     def back_propagation_learning(self, tests):
+        """Main Training code"""
+        #print(self._path_weights)
         self.initialize_random_weights()
-        #print("Initial Weights: ", self._path_weights)
         for epoch in range(self._epochs):
-            print("Epoch : ", epoch)
+            #print("Epoch : ", epoch)
             for pair in tests:
                 self.forward_propagate(pair[0])
                 self.back_propagate(pair)
                 self.clear_node_weights()
-        #print()
-        #print()
-        #print("End weights: ", self._path_weights)
-
 
     def inj(self, node):
-        #print("INJ of Node:", node)
+        """Helper function to calcualte inj of a node"""
         prev_layer = self.layer_of(node) - 1
         prev_nodes = self.get_layer_range(prev_layer)
-        #print("ON LAYER: ", self.layer_of(node))
-        #print("Prev_layer:", prev_layer)
 
         sum = 0
         for prev in range(prev_nodes[0], prev_nodes[1]):
-            #print("Node:", prev)
             sum += self._path_weights[(prev, node)] * self._node_weights[prev]
+        #Don't forget the dummy node
         sum += self._path_weights[("d", node)] * self._node_weights["d"]
 
         return sum
 
     def guess(self, inputs):
+        """Predict output of an input using the neural net"""
         self.forward_propagate(inputs[0])
         output_layer = self.get_layer_range(self._max_layer)
         res = []
@@ -189,42 +196,33 @@ class NeuralNetwork():
     def forward_propagate(self, inputs):
         """helper function - Forward propogates a single pair"""
         first_layer = self.get_layer_range(0)[1]
-        #print("First loop")
         for node in range(first_layer):
-            #print(node)
             self._node_weights[node] = inputs[node]
 
-        #print("Second loop")
         for layer in range(1, self._max_layer + 1):
-            #print("Layer: ", layer)
             nodes = self.get_layer_range(layer)
             for j in range(nodes[0], nodes[1]):
-                #print("Node: ", j)
                 inj = self.inj(j)
                 self._node_weights[j] = logistic(inj)
 
     def back_propagate(self, pair):
-        #print(pair)
+        """Helper method - backward propagates a single pair"""
         delta = {}
         output_layer = self.get_layer_range(self._max_layer)
         index = 0
-        #print("First Loop")
         for node in range(output_layer[0], output_layer[1]):
-            #print("output_layer:", output_layer)
             delta[node] = self.calculate_delta(node, delta, pair[1][index], True)
             index += 1
-        #print("Second Loop")
         for layer in range(self._max_layer - 1, -1, -1):
-            #print("Layer:", layer)
             nodes = self.get_layer_range(layer)
             for node in range(nodes[0], nodes[1]):
-                #print("node:", node)
                 delta[node] = self.calculate_delta(node, delta)
 
         for x,y in self._path_weights:
             self._path_weights[(x,y)] = self._path_weights[(x,y)] + (.1 * (self._node_weights[x] * delta[y]))
 
     def calculate_delta(self, node, delta, y = None, output = False):
+        """Helper function calculates delta"""
         aj = self._node_weights[node]
         if output:
             return (aj) * (1 - aj) * (y - aj)
@@ -238,6 +236,7 @@ class NeuralNetwork():
             return aj * (1 - aj) * sum
 
 def simple_accuracy(nn, examples):
+    """Calculates accuracy"""
     good = 0
     bad = 0
     for example in examples:
@@ -251,9 +250,66 @@ def simple_accuracy(nn, examples):
             if not done:
                 good += 1
 
-    print("Correct: ", good)
-    print("Incorrect: ", bad)
-    print("Accuracy: ", good/(good + bad))
+    return good/(good + bad)
+
+def k_fold_cross_validation(k, data, nn):
+    """For getting accuracy of the Neural network."""
+    #Create the buckets
+    buckets = [[] for _ in range(k)]
+    bucket_size = len(data) // k
+
+    #Populate each bucket randomly
+    for bucket in buckets:
+        for _ in range(bucket_size):
+            pair = random.choice(data)
+            data.remove(pair)
+            bucket.append(pair)
+
+    #Run the NN k times, with one bucket left out as testing.
+    accuracy = []
+    for i in range(k):
+        training = [pair for bucket in buckets[:i] + buckets[i+1:] for pair in bucket]
+        eval = buckets[i]
+        nn.back_propagation_learning(training)
+        accuracy.append(simple_accuracy(nn,eval))
+
+    #Report average accuracy over k runs
+    return(statistics.mean(accuracy))
+
+
+def test_layers(data):
+    """Ignore this - Just tesing code"""
+    test_data = copy.deepcopy(data)
+    nn1 = NeuralNetwork([30, 8, 1], 1000)
+    nn5 = NeuralNetwork([30,4,4,1], 1000)
+    nn10 = NeuralNetwork([30,2,2,2,2,1], 1000)
+    #nn15 = NeuralNetwork([30,5,1], 1000)
+    #nn20 = NeuralNetwork([30,5,1], 1000)
+
+    print("TEST 1")
+    accuracy1 = k_fold_cross_validation(5, test_data, nn1)
+    print("Accuracy 1:",accuracy1)
+    print("TEST 5")
+    test_data = copy.deepcopy(data)
+    accuracy5 = k_fold_cross_validation(5, test_data, nn5)
+    print("Accuracy 5:",accuracy5)
+    print("TEST 10")
+    test_data = copy.deepcopy(data)
+    accuracy10 = k_fold_cross_validation(5, test_data, nn10)
+    print("Accuracy 10:",accuracy10)
+    print("TEST 15")
+    test_data = copy.deepcopy(data)
+    #accuracy15 = k_fold_cross_validation(5, test_data, nn15)
+    print("TEST 20")
+    test_data = copy.deepcopy(data)
+    #accuracy20 = k_fold_cross_validation(5, test_data, nn20)
+
+
+    #print("Accuracy 5:",accuracy5)
+    #print("Accuracy 10:",accuracy10)
+    #print("Accuracy 15:",accuracy15)
+    #print("Accuracy 20:",accuracy20)
+
 
 def main():
     header, data = read_data(sys.argv[1], ",")
@@ -273,15 +329,19 @@ def main():
 
     ### I expect the running of your program will work something like this;
     ### this is not mandatory and you could have something else below entirely.
-    nn = NeuralNetwork([30, 6, 1], 10000)
-    nn.back_propagation_learning(real_training)
+    #nn = NeuralNetwork([13, 6, 3], 10000)
+    #nn.back_propagation_learning(real_training)
 
-    for example in eval:
-        guess = nn.guess(example)
-        rounded = [round(item) for item in guess]
-        print(example[1], ":", rounded)
+    #for example in eval:
+    #    guess = nn.guess(example)
+    #    rounded = [round(item) for item in guess]
+    #    print(example[1], ":", rounded)
 
-    simple_accuracy(nn, eval)
+    #simple_accuracy(nn, eval)
+
+    #k_fold_cross_validation(5, training, nn)
+
+    test_layers(training)
 
 if __name__ == "__main__":
     main()
