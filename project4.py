@@ -280,31 +280,35 @@ def k_fold_cross_validation(k, data, nn):
 def test_layers(data):
     """Ignore this - Just tesing code"""
     test_data = copy.deepcopy(data)
-    nn1 = NeuralNetwork([30, 8, 1], 1000)
-    nn5 = NeuralNetwork([30,4,4,1], 1000)
-    nn10 = NeuralNetwork([30,2,2,2,2,1], 1000)
-    #nn15 = NeuralNetwork([30,5,1], 1000)
-    #nn20 = NeuralNetwork([30,5,1], 1000)
+    nn1 = NeuralNetwork([13,10,3], 1000)
+    #nn5 = NeuralNetwork([2,3,3,1], 1000)
+    #nn10 = NeuralNetwork([2,3,3,3,1], 1000)
+    #nn15 = NeuralNetwork([2,3,3,3,3,1], 1000)
+    #nn20 = NeuralNetwork([2,3,3,3,3,3,1], 1000)
 
     print("TEST 1")
     accuracy1 = k_fold_cross_validation(5, test_data, nn1)
     print("Accuracy 1:",accuracy1)
-    print("TEST 5")
-    test_data = copy.deepcopy(data)
-    accuracy5 = k_fold_cross_validation(5, test_data, nn5)
-    print("Accuracy 5:",accuracy5)
-    print("TEST 10")
-    test_data = copy.deepcopy(data)
-    accuracy10 = k_fold_cross_validation(5, test_data, nn10)
-    print("Accuracy 10:",accuracy10)
-    print("TEST 15")
-    test_data = copy.deepcopy(data)
+
+    #print("TEST 5")
+    #test_data = copy.deepcopy(data)
+    #accuracy5 = k_fold_cross_validation(5, test_data, nn5)
+    #print("Accuracy 5:",accuracy5)
+
+    #print("TEST 10")
+    #test_data = copy.deepcopy(data)
+    #accuracy10 = k_fold_cross_validation(5, test_data, nn10)
+    #print("Accuracy 10:",accuracy10)
+
+    #print("TEST 15")
+    #test_data = copy.deepcopy(data)
     #accuracy15 = k_fold_cross_validation(5, test_data, nn15)
-    print("TEST 20")
-    test_data = copy.deepcopy(data)
+
+    #print("TEST 20")
+    #test_data = copy.deepcopy(data)
     #accuracy20 = k_fold_cross_validation(5, test_data, nn20)
 
-
+    print("Accuracy 1:",accuracy1)
     #print("Accuracy 5:",accuracy5)
     #print("Accuracy 10:",accuracy10)
     #print("Accuracy 15:",accuracy15)
